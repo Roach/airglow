@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>airglow — Claude dreams in color</title>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --border: #1e1e2e;
+      --text: #e2e2f0;
+      --muted: #6b6b8a;
+      --cyan: #00d4ff;
+      --magenta: #ff00cc;
+      --green: #00ff88;
+      --amber: #ffaa00;
+      --red: #ff3355;
+      --purple: #aa55ff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── Ambient glow orbs ── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-1 {
+      width: 600px; height: 600px;
+      top: -200px; left: -200px;
+      background: var(--cyan);
+      animation: orb-pulse 1.1s ease-in-out infinite;
+    }
+    .orb-2 {
+      width: 500px; height: 500px;
+      bottom: -150px; right: -150px;
+      background: var(--magenta);
+      animation: orb-pulse 1.5s ease-in-out infinite;
+      animation-delay: -0.35s;
+    }
+    @keyframes orb-pulse {
+      0%, 100% { opacity: 0.09; }
+      50%       { opacity: 0.22; }
+    }
+
+    main { position: relative; z-index: 1; }
+
+    /* ── Content frame ── */
+    .content-frame {
+      max-width: 1040px;
+      margin: 2rem auto 3rem;
+      background: rgba(13,13,22,0.72);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      backdrop-filter: blur(16px);
+      overflow: hidden;
+    }
+
+    /* ── Nav ── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 2rem;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(10,10,15,0.7);
+    }
+    .nav-logo { color: var(--cyan); font-size: 1.1rem; font-weight: 700; letter-spacing: 0.05em; }
+    .nav-links { display: flex; gap: 2rem; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.875rem; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      padding: 6rem 2rem 4rem;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border: 1px solid var(--cyan);
+      border-radius: 999px;
+      color: var(--cyan);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.5rem;
+    }
+    .hero h1 .word-hue     { color: var(--cyan); }
+    .hero h1 .word-mcp     { color: var(--magenta); }
+    .hero h1 .word-tagline { color: var(--text); }
+
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--muted);
+      max-width: 560px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.7;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-block;
+      padding: 0.75rem 1.75rem;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: transform 0.15s, opacity 0.15s;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-2px); opacity: 0.9; }
+    .btn-primary { background: var(--cyan); color: var(--bg); }
+    .btn-outline { border: 1px solid var(--border); color: var(--text); background: transparent; }
+
+    /* ── Sections ── */
+    section {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+    }
+    .section-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 0.75rem;
+    }
+    section h2 {
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 700;
+      margin-bottom: 1rem;
+      letter-spacing: -0.01em;
+    }
+    section > p {
+      color: var(--muted);
+      max-width: 600px;
+      margin-bottom: 2.5rem;
+      line-height: 1.7;
+    }
+
+    /* ── Hook timeline ── */
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      border-left: 2px solid var(--border);
+      margin-left: 1rem;
+    }
+    .timeline-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.25rem;
+      padding: 1.25rem 0 1.25rem 1.5rem;
+      position: relative;
+    }
+    .tl-cyan    { --dot-color: var(--cyan); }
+    .tl-magenta { --dot-color: var(--magenta); }
+    .tl-cyan2   { --dot-color: var(--cyan); }
+    .tl-green   { --dot-color: var(--green); }
+    .tl-red     { --dot-color: var(--red); }
+    .tl-warm    { --dot-color: var(--amber); }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -7px;
+      top: 1.6rem;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid var(--bg);
+      animation: dot-pulse 1.5s ease-in-out infinite;
+    }
+    .tl-cyan    > .timeline-item::before { background: var(--cyan);    animation-delay:  0s; }
+    .tl-magenta > .timeline-item::before { background: var(--magenta); animation-delay: -0.25s; }
+    .tl-cyan2   > .timeline-item::before { background: var(--cyan);    animation-delay: -0.5s; }
+    .tl-red     > .timeline-item::before { background: var(--red);     animation-delay: -0.75s; }
+    .tl-green   > .timeline-item::before { background: var(--green);   animation-delay: -1.0s; }
+    .tl-warm    > .timeline-item::before { background: var(--amber);   animation-delay: -1.25s; }
+
+    @keyframes dot-pulse {
+      0%, 100% { box-shadow: 0 0 4px var(--dot-color); }
+      50%       { box-shadow: 0 0 10px var(--dot-color), 0 0 18px var(--dot-color); }
+    }
+
+    .tl-text strong { display: block; font-size: 0.95rem; margin-bottom: 0.2rem; }
+    .tl-text span   { font-size: 0.83rem; color: var(--muted); }
+    .tl-badge {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-weight: 600;
+      white-space: nowrap;
+      margin-top: 0.15rem;
+      flex-shrink: 0;
+    }
+
+    /* ── Tools grid ── */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+    .tool-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+    .tool-card:hover { border-color: var(--cyan); transform: translateY(-2px); }
+    .tool-name { color: var(--cyan); font-size: 0.85rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .tool-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+    .tool-badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+    .badge-v1  { background: rgba(0,212,255,0.1);  color: var(--cyan); }
+    .badge-v2  { background: rgba(255,0,204,0.1);  color: var(--magenta); }
+    .badge-new { background: rgba(0,255,136,0.1);  color: var(--green); }
+
+    /* ── Install steps ── */
+    .install-steps { display: flex; flex-direction: column; gap: 1rem; }
+    .install-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .install-step-label {
+      padding: 0.6rem 1.5rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    pre.install-code {
+      padding: 1.5rem;
+      font-size: 0.83rem;
+      line-height: 1.7;
+      overflow-x: auto;
+      color: var(--text);
+    }
+    .kw  { color: var(--magenta); }
+    .str { color: var(--green); }
+    .key { color: var(--cyan); }
+    .num { color: var(--amber); }
+    .cm  { color: var(--muted); }
+
+    /* ── Separator ── */
+    .sep { border: none; border-top: 1px solid var(--border); margin: 0 2rem; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    footer a { color: var(--cyan); text-decoration: none; }
+
+    @media (max-width: 600px) {
+      .content-frame { margin: 1rem; border-radius: 12px; }
+      nav { padding: 1rem; }
+      .nav-links { gap: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<main>
+<div class="content-frame">
+
+  <nav>
+    <span class="nav-logo">airglow</span>
+    <div class="nav-links">
+      <a href="#hooks">Hooks</a>
+      <a href="#tools">Tools</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/Roach/airglow">GitHub</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Claude Code × Philips Hue</div>
+    <h1>
+      <span class="word-hue">Claude</span><br>
+      <span class="word-tagline">dreams in </span><span class="word-mcp">color</span>
+    </h1>
+    <p>
+      Watch Claude think. A Philips Hue MCP server + Claude Code hooks that animate
+      your lights in real time — cyan while reasoning, magenta while working, green on success.
+      Every tool call, every permission prompt, every moment of focus: visible.
+      Works when your screen is locked or off — glance at the light to know if Claude needs you.
+    </p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="#install">Get started</a>
+      <a class="btn btn-outline" href="https://github.com/Roach/airglow">View on GitHub</a>
+    </div>
+  </div>
+
+  <!-- Session hooks section -->
+  <section id="hooks">
+    <div class="section-label">Claude Code Hooks</div>
+    <h2>Every Claude session state, lit up</h2>
+    <p>
+      <code>hue-status.js</code> hooks into Claude Code's event system and drives a dedicated light
+      for each session. Run multiple Claude sessions at once — each bound to a different light.
+      Claude saves your light state at session start and restores it when it stops.
+    </p>
+
+    <div class="timeline">
+      <div class="tl-cyan">
+        <div class="timeline-item">
+          <div class="tl-text">
+            <strong>User submits prompt</strong>
+            <span>UserPromptSubmit → cyan pulse (thinking)</span>
+          </div>
+          <span class="tl-badge" style="background:rgba(0,212,255,0.12);color:var(--cyan)">thinking</span>
+        </div>
+      </div>
+      <div class="tl-magenta">
+        <div class="timeline-item">
+          <div class="tl-text">
+            <strong>Tool starts</strong>
+            <span>PreToolUse → magenta pulse (working)</span>
+          </div>
+          <span class="tl-badge" style="background:rgba(255,0,204,0.12);color:var(--magenta)">working</span>
+        </div>
+      </div>
+      <div class="tl-cyan2">
+        <div class="timeline-item">
+          <div class="tl-text">
+            <strong>Tool finishes</strong>
+            <span>PostToolUse → cyan pulse (back to thinking)</span>
+          </div>
+          <span class="tl-badge" style="background:rgba(0,212,255,0.12);color:var(--cyan)">thinking</span>
+        </div>
+      </div>
+      <div class="tl-red">
+        <div class="timeline-item">
+          <div class="tl-text">
+            <strong>Permission prompt</strong>
+            <span>Notification → red pulse, 30s auto-expire → idle</span>
+          </div>
+          <span class="tl-badge" style="background:rgba(255,51,85,0.12);color:var(--red)">prompt</span>
+        </div>
+      </div>
+      <div class="tl-green">
+        <div class="timeline-item">
+          <div class="tl-text">
+            <strong>Plan approved</strong>
+            <span>exit_plan_mode → solid green flash, then resumes</span>
+          </div>
+          <span class="tl-badge" style="background:rgba(0,255,136,0.12);color:var(--green)">success</span>
+        </div>
+      </div>
+      <div class="tl-warm">
+        <div class="timeline-item">
+          <div class="tl-text">
+            <strong>Session ends</strong>
+            <span>Stop → restores pre-session light state</span>
+          </div>
+          <span class="tl-badge" style="background:rgba(255,170,0,0.12);color:var(--amber)">restore</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="sep" />
+
+  <!-- Tools section -->
+  <section id="tools">
+    <div class="section-label">MCP Tools</div>
+    <h2>Full Hue control from Claude</h2>
+    <p>15 tools covering setup, light control, scenes, native v2 effects, and sensors.</p>
+
+    <div class="tools-grid">
+      <div class="tool-card">
+        <div class="tool-badge badge-new">ONBOARDING</div>
+        <div class="tool-name">setup</div>
+        <div class="tool-desc">Guided bridge discovery, API key registration, light selection. Returns paste-ready hook config.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-badge badge-v1">V1 API</div>
+        <div class="tool-name">get_lights</div>
+        <div class="tool-desc">List lights — filterable by room name, on/off state, or color capability.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-badge badge-v1">V1 API</div>
+        <div class="tool-name">set_light / set_group</div>
+        <div class="tool-desc">Full control: on/off, brightness, color temp, RGB, HSL, alerts, transition time.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-badge badge-v2">V2 API</div>
+        <div class="tool-name">set_effect</div>
+        <div class="tool-desc">Native animated effects: candle, fire, prism, sparkle, opal, glisten, cosmos. Runs on the light itself.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-badge badge-v1">V1 API</div>
+        <div class="tool-name">set_status</div>
+        <div class="tool-desc">Semantic status colors: idle, thinking, working, building, waiting, success, error, alert, pulse_once.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-badge badge-v1">V1 API</div>
+        <div class="tool-name">get_scenes / activate_scene</div>
+        <div class="tool-desc">List and activate saved scenes by ID and group.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-badge badge-new">NEW</div>
+        <div class="tool-name">create_scene</div>
+        <div class="tool-desc">Snapshot current light state as a named scene. Captures a group or specific lights instantly.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-badge badge-v2">V2 API</div>
+        <div class="tool-name">get_dynamic_scenes</div>
+        <div class="tool-desc">List animated Hue smart scenes — Candle, Fireplace, Colorloop, and more.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-badge badge-v2">V2 API</div>
+        <div class="tool-name">activate_dynamic_scene</div>
+        <div class="tool-desc">Activate a smart scene with full animation. Optional speed control (0.0–1.0).</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-badge badge-new">NEW</div>
+        <div class="tool-name">get_sensors</div>
+        <div class="tool-desc">List motion sensors, temperature sensors, light level sensors, buttons, and remotes.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-badge badge-v1">V1 API</div>
+        <div class="tool-name">get_groups / get_scenes</div>
+        <div class="tool-desc">List rooms, zones, groups, and all saved scenes on the bridge.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-badge badge-v1">V1 API</div>
+        <div class="tool-name">discover_bridge / create_user</div>
+        <div class="tool-desc">Auto-discover bridges on the network and register a new API key.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Install section -->
+  <section id="install">
+    <div class="section-label">Get Started</div>
+    <h2>Up in three steps</h2>
+    <p>Install the server, add it to Claude Code, and call <code style="color:var(--cyan)">setup()</code>. The tool walks you through everything else.</p>
+
+    <div class="install-steps">
+      <div class="install-block">
+        <div class="install-step-label">1. Install</div>
+        <pre class="install-code"><span class="cm"># Clone and install</span>
+git clone https://github.com/Roach/airglow.git
+cd airglow
+npm install</pre>
+      </div>
+      <div class="install-block">
+        <div class="install-step-label">2. Configure</div>
+        <pre class="install-code"><span class="cm">// ~/.claude/settings.json</span>
+{
+  <span class="key">"mcpServers"</span>: {
+    <span class="key">"hue"</span>: {
+      <span class="key">"command"</span>: <span class="str">"node"</span>,
+      <span class="key">"args"</span>: [<span class="str">"/path/to/airglow/index.js"</span>]
+    }
+  }
+}</pre>
+      </div>
+      <div class="install-block">
+        <div class="install-step-label">3. Setup</div>
+        <pre class="install-code"><span class="cm"># In Claude, call:</span>
+setup()
+
+<span class="cm"># Bridge found → press link button → create_user → then:</span>
+setup({ <span class="key">default_group</span>: <span class="num">0</span>, <span class="key">hook_light_id</span>: <span class="num">6</span> })
+
+<span class="cm"># Returns ready-to-paste hook config for .claude/settings.json</span></pre>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /.content-frame -->
+</main>
+
+<footer>
+  Built with Claude Code ·
+  <a href="https://github.com/Roach/airglow">github.com/Roach/airglow</a>
+</footer>
+
+<script>
+(function () {
+  var cyan = '#00d4ff', magenta = '#ff00cc';
+  function rand(lo, hi) { return Math.floor(Math.random() * (hi - lo + 1)) + lo; }
+  function cycleOrb(el, ms) {
+    var colors = [cyan, magenta];
+    var i = Math.round(Math.random());
+    el.style.background = colors[i];
+    var left = rand(2, 6);
+    setInterval(function () {
+      if (--left <= 0) { i ^= 1; el.style.background = colors[i]; left = rand(2, 6); }
+    }, ms);
+  }
+  cycleOrb(document.querySelector('.orb-1'), 1100);
+  cycleOrb(document.querySelector('.orb-2'), 1500);
+})();
+</script>
+</body>
+</html>

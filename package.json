@@ -1,0 +1,13 @@
+{
+  "name": "airglow",
+  "version": "1.0.0",
+  "description": "Philips Hue MCP server + Claude Code hooks — ambient light as a visual state indicator",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "dotenv": "^16.4.5"
+  }
+}
