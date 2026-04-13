@@ -1,6 +1,20 @@
 #!/usr/bin/env node
 'use strict';
 
+// ── Self-detach ───────────────────────────────────────────────────────────────
+// Claude Code hooks block until the process exits. Detach immediately so the
+// parent returns in <10ms; the actual work runs in a background child.
+if (!process.env.HUE_DETACHED) {
+  const { spawn } = require('child_process');
+  const child = spawn(process.execPath, [__filename, ...process.argv.slice(2)], {
+    detached: true,
+    stdio: 'ignore',
+    env: { ...process.env, HUE_DETACHED: '1' },
+  });
+  child.unref();
+  process.exit(0);
+}
+
 const path  = require('path');
 const fs    = require('fs');
 const https = require('https');
@@ -29,6 +43,7 @@ const STATUS_STATES = {
 
 const PULSE_HUE = { thinking: 185, working: 300, prompt: 0 }; // cyan, magenta, red
 const HALF_CYCLE_MS = 400;
+const HTTP_TIMEOUT_MS = 3000;
 
 const status   = process.argv[2];
 const lightId  = parseInt(process.argv[3] || process.env.HUE_HOOK_LIGHT || '6', 10);
@@ -44,17 +59,20 @@ function put(state) {
     headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
     agent,
   }, res => res.resume());
+  req.setTimeout(HTTP_TIMEOUT_MS, () => req.destroy());
   req.on('error', () => {});
   req.write(body);
   req.end();
 }
 
 function get(cb) {
-  https.get({ hostname: ip, path: `/api/${username}/lights/${lightId}`, agent }, res => {
+  const req = https.get({ hostname: ip, path: `/api/${username}/lights/${lightId}`, agent }, res => {
     let data = '';
     res.on('data', d => data += d);
     res.on('end', () => { try { cb(JSON.parse(data)); } catch { cb(null); } });
-  }).on('error', () => cb(null));
+  });
+  req.setTimeout(HTTP_TIMEOUT_MS, () => { req.destroy(); cb(null); });
+  req.on('error', () => cb(null));
 }
 
 function killPulse() {
